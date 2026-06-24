@@ -71,7 +71,7 @@ st.markdown("""
 # ----------------------------------------------------
 st.markdown("<div class='ubiknos-header'>UBIKNOS</div>", unsafe_allow_html=True)
 
-st.title("📊 Dashboard Control de Viáticos")
+st.title("📊 Viáticos")
 st.markdown("Plataforma automatizada para el control, validación y análisis de viáticos.")
 st.markdown("---")
 
@@ -230,7 +230,7 @@ kpi_html = f"""
         <h2 style="margin:5px 0 0 0; color:{'#E74C3C' if diferencia_total < 0 else '#27AE60'}; font-size:24px;">${diferencia_total:,.2f}</h2>
     </div>
     <div class="custom-card" style="flex: 1; min-width: 200px; text-align: center; border: 1px solid #74B9FF;">
-        <h4 style="margin:0; color:#2C3E50; font-size:15px; font-weight: bold;">Diferencia Real (Col X)</h4>
+        <h4 style="margin:0; color:#2C3E50; font-size:15px; font-weight: bold;">Diferencia Real </h4>
         <h2 style="margin:5px 0 0 0; color:{'#E74C3C' if total_diferencia_real < 0 else '#27AE60'}; font-size:24px;">${total_diferencia_real:,.2f}</h2>
     </div>
 </div>
