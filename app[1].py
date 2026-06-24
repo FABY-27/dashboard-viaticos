@@ -71,7 +71,7 @@ st.markdown("""
 # ----------------------------------------------------
 st.markdown("<div class='ubiknos-header'>UBIKNOS</div>", unsafe_allow_html=True)
 
-st.title("📊 Dashboard Control de Viáticos")
+st.title("📊 Viáticos")
 st.markdown("Plataforma automatizada para el control, validación y análisis de viáticos.")
 st.markdown("---")
 
