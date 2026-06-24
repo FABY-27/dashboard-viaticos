@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import re
 
 # Configuración de la página
 st.set_page_config(page_title="Dashboard de Viáticos", layout="wide", initial_sidebar_state="expanded")
@@ -71,14 +72,33 @@ def load_data():
     if 'TECNICO' in df.columns:
         df = df.dropna(subset=['TECNICO'])
         
-    # Función hiper-estricta para limpiar signos de pesos, comas, espacios y convertir a números
+    # Función HIPER-ESTRICTA e INTELIGENTE para limpieza de formato regional ($2.475,00 vs $2,475.00)
     def clean_currency(val):
         if pd.isnull(val): return 0.0
+        if isinstance(val, (int, float)): return float(val)
         if isinstance(val, str):
-            val = val.replace('$', '').replace(',', '').strip()
+            val = val.replace('$', '').strip()
             if val in ['-', '', ' ']: return 0.0
-        try: return float(val)
-        except: return 0.0
+            
+            # Buscar separadores (puntos y comas)
+            punctuations = re.findall(r'[.,]', val)
+            if not punctuations:
+                try: return float(val)
+                except: return 0.0
+                
+            last_punct = punctuations[-1]
+            
+            if last_punct == ',':
+                # Formato $2.475,00 o $980,00 (Coma es decimal)
+                val = val.replace('.', '') # Eliminar punto de miles
+                val = val.replace(',', '.') # Coma a punto decimal
+            elif last_punct == '.':
+                # Formato $2,475.00 o 3307.50 (Punto es decimal)
+                val = val.replace(',', '') # Eliminar coma de miles
+                
+            try: return float(val)
+            except: return 0.0
+        return 0.0
 
     # Lista de todas las columnas que deben ser numéricas/dinero
     numeric_cols = ['MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS',
