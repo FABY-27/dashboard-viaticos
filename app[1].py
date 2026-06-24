@@ -7,67 +7,76 @@ import re
 # ----------------------------------------------------
 # 1. CONFIGURACIÓN DE LA PÁGINA Y ESTILOS CSS
 # ----------------------------------------------------
-st.set_page_config(page_title="Dashboard Ubiknos", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Dashboard de Viáticos", layout="wide", initial_sidebar_state="expanded")
 
+# Inyección de CSS para la personalización solicitada
 st.markdown("""
 <style>
-    /* Fondo general de la aplicación: Blanco */
+    /* Fondo general blanco */
     .stApp {
         background-color: #FFFFFF;
     }
 
-    /* Menú lateral (Sidebar): Azul claro con letras blancas */
+    /* Estilo del menú lateral (Sidebar) - Fondo azul claro y texto blanco */
     [data-testid="stSidebar"] {
-        background-color: #4A90E2 !important;
+        background-color: #4A90E2 !important; /* Azul Claro */
     }
     [data-testid="stSidebar"] * {
-        color: #FFFFFF !important;
+        color: #FFFFFF !important; /* Texto blanco en el sidebar */
     }
+    
+    /* Personalización de los inputs en el sidebar para que se lean bien */
     .stSelectbox div[data-baseweb="select"] > div,
     .stMultiSelect div[data-baseweb="select"] > div,
     .stDateInput input {
         background-color: #FFFFFF !important;
-        color: #333333 !important;
+        color: #333333 !important; /* Texto oscuro dentro del input */
+        border: none !important;
+    }
+    /* Estilo de las "píldoras" en el multiselect del sidebar */
+    .stMultiSelect span[data-baseweb="tag"] {
+        background-color: #2C3E50 !important;
+        color: white !important;
     }
 
-    /* TARJETAS NEGRAS (Resumen y Gráficos) */
-    .black-card {
-        background-color: #000000 !important;
-        border-radius: 12px;
+    /* Clase personalizada para crear el efecto de "Tarjetas" (Cards) con sombra */
+    .custom-card {
+        background-color: #F8FBFF; /* Azul muy muy claro/blanco azulado */
+        border-radius: 10px;
         padding: 20px;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra suave y pequeña */
         margin-bottom: 20px;
-        color: #FFFFFF !important;
     }
-    .black-card h2, .black-card h4, .black-card p {
-        color: #FFFFFF !important;
+    
+    /* Textos principales oscuros para contrastar con el fondo blanco */
+    h1, h2, h3, h4, h5, h6, p, span {
+        color: #2C3E50;
     }
-
-    /* TARJETAS CLARAS (Tablas y Comentarios) */
-    .light-card {
-        background-color: #F8FBFF;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-        border: 1px solid #E1E8F0;
-    }
-
+    
     /* Título Ubiknos esquina superior derecha */
     .ubiknos-header {
         position: absolute;
-        top: -50px;
-        right: 10px;
-        font-size: 28px;
+        top: 0px;
+        right: 20px;
+        font-size: 24px;
         font-weight: bold;
-        color: #1A4B8F;
+        color: #4A90E2;
         letter-spacing: 2px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 2. CARGA Y LIMPIEZA DE DATOS (Mismo motor anterior)
+# 2. ENCABEZADO
+# ----------------------------------------------------
+st.markdown("<div class='ubiknos-header'>UBIKNOS</div>", unsafe_allow_html=True)
+
+st.title("📊 Dashboard Control de Viáticos")
+st.markdown("Plataforma automatizada para el control, validación y análisis de viáticos.")
+st.markdown("---")
+
+# ----------------------------------------------------
+# 3. EXTRACCIÓN Y LIMPIEZA DE DATOS
 # ----------------------------------------------------
 @st.cache_data(ttl=600)
 def load_data():
@@ -77,27 +86,33 @@ def load_data():
         export_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv&sheet=Viaticos"
         df = pd.read_csv(export_url, header=1)
     except Exception as e:
-        st.error(f"Error al conectar con Google Sheets: {e}")
+        st.error(f"Error al cargar los datos. Detalles: {e}")
         return pd.DataFrame()
 
     df.columns = df.columns.str.strip()
+
     while len(df.columns) <= 42:
-        df[f'Col_{len(df.columns)}'] = 0.0
+        df[f'Col_Vacia_{len(df.columns)}'] = 0.0
 
     cols = list(df.columns)
+    
     cols[10] = 'MONTO DEPOSITADO'
     cols[24] = 'SUMA VIATICOS VALIDADOS'
-    
-    cat_names = ['Gasolina', 'Casetas', 'Autobus', 'Hospedaje', 'Lavanderia', 'Comidas', 'Renta_Auto', 'Vuelos', 'Extra']
-    for i, name in enumerate(cat_names, 11): cols[i] = f'DEP_{name}'
-    for i, name in zip(range(26, 43, 2), cat_names): cols[i] = f'VAL_{name}'
-    
+
+    cols[11], cols[12], cols[13], cols[14], cols[15], cols[16], cols[17], cols[18], cols[19] = \
+    'DEP_Gasolina', 'DEP_Casetas', 'DEP_Autobus', 'DEP_Hospedaje', 'DEP_Lavanderia', 'DEP_Comidas', 'DEP_Renta_Auto', 'DEP_Vuelos', 'DEP_Extra'
+
+    cols[26], cols[28], cols[30], cols[32], cols[34], cols[36], cols[38], cols[40], cols[42] = \
+    'VAL_Gasolina', 'VAL_Casetas', 'VAL_Autobus', 'VAL_Hospedaje', 'VAL_Lavanderia', 'VAL_Comidas', 'VAL_Renta_Auto', 'VAL_Vuelos', 'VAL_Extra'
+
     df.columns = cols
+    
     if 'FECHA SERVICIOS' in df.columns:
         df['FECHA SERVICIOS'] = pd.to_datetime(df['FECHA SERVICIOS'], errors='coerce')
+        
     if 'TECNICO' in df.columns:
         df = df.dropna(subset=['TECNICO'])
-
+        
     def clean_currency(val):
         if pd.isnull(val): return 0.0
         if isinstance(val, (int, float)): return float(val)
@@ -117,127 +132,175 @@ def load_data():
             except: return 0.0
         return 0.0
 
-    numeric_cols = ['MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS'] + \
-                   [f'DEP_{n}' for n in cat_names] + [f'VAL_{n}' for n in cat_names]
-    for col in numeric_cols: df[col] = df[col].apply(clean_currency)
+    numeric_cols = ['MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS',
+                   'DEP_Gasolina', 'DEP_Casetas', 'DEP_Autobus', 'DEP_Hospedaje', 'DEP_Lavanderia', 'DEP_Comidas', 'DEP_Renta_Auto', 'DEP_Vuelos', 'DEP_Extra',
+                   'VAL_Gasolina', 'VAL_Casetas', 'VAL_Autobus', 'VAL_Hospedaje', 'VAL_Lavanderia', 'VAL_Comidas', 'VAL_Renta_Auto', 'VAL_Vuelos', 'VAL_Extra']
+                   
+    for col in numeric_cols:
+        df[col] = df[col].apply(clean_currency)
+        
     df['DIFERENCIA'] = df['MONTO DEPOSITADO'] - df['SUMA VIATICOS VALIDADOS']
-    if 'COMENTARIOS' in df.columns: df['COMENTARIOS'] = df['COMENTARIOS'].fillna("").astype(str)
+    
+    if 'COMENTARIOS' in df.columns:
+        df['COMENTARIOS'] = df['COMENTARIOS'].fillna("Sin comentarios").astype(str)
+    else:
+        df['COMENTARIOS'] = "Sin comentarios"
+
     return df
 
 df = load_data()
-if df.empty: st.stop()
+
+if df.empty:
+    st.stop()
 
 # ----------------------------------------------------
-# 3. FILTROS (SIDEBAR)
+# 4. FILTROS (SIDEBAR)
 # ----------------------------------------------------
-st.sidebar.markdown("# Ubiknos")
-min_d, max_d = df['FECHA SERVICIOS'].min(), df['FECHA SERVICIOS'].max()
-date_range = st.sidebar.date_input("Rango de Fechas:", [min_d.date(), max_d.date()])
-sel_tec = st.sidebar.multiselect("Técnico:", options=sorted(df['TECNICO'].unique()))
-sel_ser = st.sidebar.multiselect("Servicio:", options=sorted(df['SERVICIO'].dropna().unique()))
+st.sidebar.markdown("## 🔍 Filtros de Búsqueda")
 
+min_date = df['FECHA SERVICIOS'].min()
+max_date = df['FECHA SERVICIOS'].max()
+
+if pd.isnull(min_date) or pd.isnull(max_date):
+    st.sidebar.warning("Hay fechas inválidas.")
+    date_range = []
+else:
+    date_range = st.sidebar.date_input("Rango de Fechas:", [min_date.date(), max_date.date()], min_value=min_date.date(), max_value=max_date.date())
+
+tecnicos = sorted(df['TECNICO'].dropna().unique().tolist())
+selected_tecnicos = st.sidebar.multiselect("Seleccionar Técnico:", options=tecnicos, default=[])
+
+if 'LOCALIDAD' in df.columns:
+    localidades = sorted(df['LOCALIDAD'].dropna().unique().tolist())
+    selected_localidades = st.sidebar.multiselect("Seleccionar Localidad:", options=localidades, default=[])
+else:
+    selected_localidades = []
+
+if 'SERVICIO' in df.columns:
+    servicios = sorted(df['SERVICIO'].dropna().unique().tolist())
+    selected_servicios = st.sidebar.multiselect("Seleccionar Servicio:", options=servicios, default=[])
+else:
+    selected_servicios = []
+
+# Aplicar filtros
 df_filtered = df.copy()
+
 if len(date_range) == 2:
-    df_filtered = df_filtered[(df_filtered['FECHA SERVICIOS'].dt.date >= date_range[0]) & (df_filtered['FECHA SERVICIOS'].dt.date <= date_range[1])]
-if sel_tec: df_filtered = df_filtered[df_filtered['TECNICO'].isin(sel_tec)]
-if sel_ser: df_filtered = df_filtered[df_filtered['SERVICIO'].isin(sel_ser)]
+    start_date, end_date = date_range
+    df_filtered = df_filtered[(df_filtered['FECHA SERVICIOS'].dt.date >= start_date) & (df_filtered['FECHA SERVICIOS'].dt.date <= end_date)]
+
+if selected_tecnicos:
+    df_filtered = df_filtered[df_filtered['TECNICO'].isin(selected_tecnicos)]
+
+if selected_localidades:
+    df_filtered = df_filtered[df_filtered['LOCALIDAD'].isin(selected_localidades)]
+
+if selected_servicios:
+    df_filtered = df_filtered[df_filtered['SERVICIO'].isin(selected_servicios)]
 
 # ----------------------------------------------------
-# 4. DASHBOARD - RESUMEN GLOBAL (FONDO NEGRO)
+# 5. TARJETAS DE INDICADORES (KPIs) CON CSS
 # ----------------------------------------------------
-# Texto Ubiknos arriba a la derecha
-st.markdown("<div class='ubiknos-header'>UBIKNOS</div>", unsafe_allow_html=True)
-
-st.title("📊 Control de Viáticos")
-st.markdown("---")
-
 st.markdown("### Resumen Global")
-total_dep = df_filtered['MONTO DEPOSITADO'].sum()
-total_val = df_filtered['SUMA VIATICOS VALIDADOS'].sum()
-dif_total = total_dep - total_val
 
+total_depositado = df_filtered['MONTO DEPOSITADO'].sum()
+total_gastado = df_filtered['SUMA VIATICOS VALIDADOS'].sum()
+diferencia_total = total_depositado - total_gastado
+
+# HTML para las tarjetas de KPI
 kpi_html = f"""
-<div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 25px;">
-    <div class="black-card" style="flex: 1; text-align: center;">
-        <p style="margin:0; font-size:16px; opacity:0.8;">Total Depositado</p>
-        <h2 style="margin:5px 0 0 0;">${total_dep:,.2f}</h2>
+<div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
+    <div class="custom-card" style="flex: 1; text-align: center;">
+        <h4 style="margin:0; color:#555;">Total Depositado</h4>
+        <h2 style="margin:5px 0 0 0; color:#4C72B0;">${total_depositado:,.2f}</h2>
     </div>
-    <div class="black-card" style="flex: 1; text-align: center;">
-        <p style="margin:0; font-size:16px; opacity:0.8;">Total Gastado Real</p>
-        <h2 style="margin:5px 0 0 0;">${total_val:,.2f}</h2>
+    <div class="custom-card" style="flex: 1; text-align: center;">
+        <h4 style="margin:0; color:#555;">Total Gastado</h4>
+        <h2 style="margin:5px 0 0 0; color:#55A868;">${total_gastado:,.2f}</h2>
     </div>
-    <div class="black-card" style="flex: 1; text-align: center;">
-        <p style="margin:0; font-size:16px; opacity:0.8;">Diferencia Neta</p>
-        <h2 style="margin:5px 0 0 0; color:{'#FF4B4B' if dif_total < 0 else '#00FF7F'} !important;">${dif_total:,.2f}</h2>
+    <div class="custom-card" style="flex: 1; text-align: center;">
+        <h4 style="margin:0; color:#555;">Diferencia Neta</h4>
+        <h2 style="margin:5px 0 0 0; color:{'#E74C3C' if diferencia_total < 0 else '#27AE60'};">${diferencia_total:,.2f}</h2>
     </div>
 </div>
 """
 st.markdown(kpi_html, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 5. ANÁLISIS GRÁFICO (FONDO NEGRO / LETRAS BLANCAS)
+# 6. GRÁFICOS DENTRO DE CONTENEDORES CON CLASE CSS
 # ----------------------------------------------------
 st.markdown("### Análisis Gráfico")
-col_g1, col_g2 = st.columns(2)
+col_graf1, col_graf2 = st.columns(2)
 
-cat_names = ["Gasolina", "Casetas", "Autobus", "Hospedaje", "Lavanderia", "Comidas", "Renta Auto", "Vuelos", "Extra"]
-sum_dep = [df_filtered[f'DEP_{n.replace(" ", "_")}'].sum() for n in cat_names]
-sum_val = [df_filtered[f'VAL_{n.replace(" ", "_")}'].sum() for n in cat_names]
+cat_names = ["Gasolina", "Casetas", "Autobus", "Hospedaje", "Lavanderia", "Comidas", "Renta de Auto", "Vuelos", "Extra"]
+dep_cols = ['DEP_Gasolina', 'DEP_Casetas', 'DEP_Autobus', 'DEP_Hospedaje', 'DEP_Lavanderia', 'DEP_Comidas', 'DEP_Renta_Auto', 'DEP_Vuelos', 'DEP_Extra']
+val_cols = ['VAL_Gasolina', 'VAL_Casetas', 'VAL_Autobus', 'VAL_Hospedaje', 'VAL_Lavanderia', 'VAL_Comidas', 'VAL_Renta_Auto', 'VAL_Vuelos', 'VAL_Extra']
 
-with col_g1:
-    st.markdown("<div class='black-card'>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; font-weight:bold;'>Comparativo: Depositado vs Gastado</p>", unsafe_allow_html=True)
-    fig_bar = go.Figure()
-    fig_bar.add_trace(go.Bar(x=cat_names, y=sum_dep, name='Depositado', marker_color='#00D4FF', texttemplate='$%{y:,.0f}', textposition='outside'))
-    fig_bar.add_trace(go.Bar(x=cat_names, y=sum_val, name='Gastado Real', marker_color='#00FF7F', texttemplate='$%{y:,.0f}', textposition='outside'))
-    
-    fig_bar.update_layout(
-        barmode='group', height=400, margin=dict(l=20, r=20, t=40, b=20),
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color="white"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
-    fig_bar.update_xaxes(showgrid=False, color="white")
-    fig_bar.update_yaxes(showgrid=True, gridcolor="#333333", color="white", tickprefix="$")
-    st.plotly_chart(fig_bar, use_container_width=True)
+sum_deposit = [df_filtered[c].sum() for c in dep_cols]
+sum_valid = [df_filtered[c].sum() for c in val_cols]
+
+df_chart = pd.DataFrame({'Categoría': cat_names, 'Depositado': sum_deposit, 'Validado': sum_valid})
+
+with col_graf1:
+    st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+    st.markdown("**Comparativo: Depositado vs Gastado**")
+    fig_comp = go.Figure()
+    fig_comp.add_trace(go.Bar(x=df_chart['Categoría'], y=df_chart['Depositado'], name='Depositado', marker_color='#4C72B0', texttemplate='$%{y:,.2f}', textposition='outside'))
+    fig_comp.add_trace(go.Bar(x=df_chart['Categoría'], y=df_chart['Validado'], name='Gastado Real', marker_color='#55A868', texttemplate='$%{y:,.2f}', textposition='outside'))
+    # Transparente para que tome el color de la tarjeta
+    fig_comp.update_layout(barmode='group', height=400, margin=dict(l=0, r=0, t=30, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    fig_comp.update_yaxes(tickprefix="$", showgrid=True, gridcolor='#E0E0E0')
+    st.plotly_chart(fig_comp, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with col_g2:
-    st.markdown("<div class='black-card'>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; font-weight:bold;'>Distribución del Gasto Validado</p>", unsafe_allow_html=True)
-    pie_data = pd.DataFrame({'Cat': cat_names, 'Val': sum_val}).query('Val > 0')
-    if not pie_data.empty:
-        fig_pie = px.pie(pie_data, names='Cat', values='Val', hole=0.4, color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_pie.update_traces(textinfo='value+percent', texttemplate='%{label}<br>$%{value:,.0f}<br>(%{percent})')
-        fig_pie.update_layout(
-            height=400, margin=dict(l=20, r=20, t=20, b=20),
-            paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")
-        )
+with col_graf2:
+    st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+    st.markdown("**Distribución del Gasto Validado**")
+    df_chart_pie = df_chart[df_chart['Validado'] > 0]
+    
+    if not df_chart_pie.empty:
+        fig_pie = px.pie(df_chart_pie, names='Categoría', values='Validado', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig_pie.update_traces(textinfo='value+percent', texttemplate='%{label}<br>$%{value:,.2f}<br>(%{percent})')
+        fig_pie.update_layout(height=400, margin=dict(l=0, r=0, t=30, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_pie, use_container_width=True)
     else:
-        st.markdown("<p style='text-align:center; padding:150px 0;'>Sin datos para mostrar</p>", unsafe_allow_html=True)
+        st.info("No hay gastos validados.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 6. TABLA Y COMENTARIOS (FONDOS CLAROS)
+# 7. TABLA Y COMENTARIOS EN TARJETAS
 # ----------------------------------------------------
-st.markdown("### Detalle de Movimientos")
-st.markdown("<div class='light-card'>", unsafe_allow_html=True)
-df_t = df_filtered[['TECNICO', 'SERVICIO', 'LOCALIDAD', 'MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS', 'DIFERENCIA']]
-st.dataframe(
-    df_t.style.map(lambda x: 'background-color: #d4edda' if x > 0 else ('background-color: #f8d7da' if x < 0 else ''), subset=['DIFERENCIA'])
-    .format("${:,.2f}", subset=['MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS', 'DIFERENCIA']),
-    use_container_width=True, hide_index=True
-)
+st.markdown("### Tabla Detallada de Viáticos")
+st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+
+cols_to_show = ['TECNICO', 'LIDER DE CUENTA', 'SERVICIO', 'LOCALIDAD', 'MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS', 'DIFERENCIA']
+cols_to_show = [c for c in cols_to_show if c in df_filtered.columns]
+df_table = df_filtered[cols_to_show].copy()
+
+def color_semaforo(val):
+    if not isinstance(val, (int, float)): return ''
+    if val > 0: return 'background-color: #d4edda; color: #155724;'
+    elif val < 0: return 'background-color: #f8d7da; color: #721c24;'
+    return ''
+
+styled_df = df_table.style.map(color_semaforo, subset=['DIFERENCIA']).format({'MONTO DEPOSITADO': '${:,.2f}', 'SUMA VIATICOS VALIDADOS': '${:,.2f}', 'DIFERENCIA': '${:,.2f}'})
+st.dataframe(styled_df, use_container_width=True, hide_index=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("### 💬 Comentarios")
-st.markdown("<div class='light-card'>", unsafe_allow_html=True)
-tec_sel = st.selectbox("Seleccionar técnico para ver notas:", ["-- Selecciona --"] + list(df_filtered['TECNICO'].unique()))
-if tec_sel != "-- Selecciona --":
-    notas = df_filtered.query(f"TECNICO == '{tec_sel}' and COMENTARIOS != ''")
-    if notas.empty: st.info("Sin comentarios.")
-    else:
-        for _, r in notas.iterrows():
-            st.write(f"**{r['FECHA SERVICIOS'].date()} - {r['SERVICIO']}:** {r['COMENTARIOS']}")
+st.markdown("### 💬 Comentarios y Notas")
+st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+if 'COMENTARIOS' in df_filtered.columns:
+    tecnicos_filtrados = df_filtered['TECNICO'].unique().tolist()
+    if tecnicos_filtrados:
+        tecnico_comentario = st.selectbox("Selecciona un Técnico para ver sus comentarios detallados:", ["-- Selecciona un técnico --"] + tecnicos_filtrados)
+        if tecnico_comentario != "-- Selecciona un técnico --":
+            df_com = df_filtered[(df_filtered['TECNICO'] == tecnico_comentario) & (df_filtered['COMENTARIOS'].str.strip() != "") & (df_filtered['COMENTARIOS'] != "Sin comentarios")]
+            if df_com.empty:
+                st.info(f"El técnico {tecnico_comentario} no tiene comentarios.")
+            else:
+                for idx, row in df_com.iterrows():
+                    fecha = row['FECHA SERVICIOS'].strftime('%Y-%m-%d') if pd.notnull(row.get('FECHA SERVICIOS')) else 'Sin fecha'
+                    servicio = row.get('SERVICIO', 'Sin servicio')
+                    st.markdown(f"**🗓 {fecha} | 🛠 Proyecto:** {servicio} <br>📝 {row['COMENTARIOS']}", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
