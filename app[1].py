@@ -246,7 +246,6 @@ with col_graf1:
     st.markdown("**Comparativo: Depositado vs Gastado**")
     fig_comp = go.Figure()
     
-    # Se añade textfont para que las letras del detalle (números sobre la barra) sean estrictamente negras
     fig_comp.add_trace(go.Bar(
         x=df_chart['Categoría'], 
         y=df_chart['Depositado'], 
@@ -266,7 +265,6 @@ with col_graf1:
         textfont=dict(color='black')
     ))
     
-    # Se añade 'font=dict(color="black")' para asegurar la leyenda y etiquetas de ejes en negro
     fig_comp.update_layout(
         barmode='group', 
         height=400, 
@@ -276,7 +274,11 @@ with col_graf1:
         font=dict(color='black'),
         legend=dict(font=dict(color='black'))
     )
-    fig_comp.update_yaxes(tickprefix="$", showgrid=True, gridcolor='#E0E0E0')
+    
+    # Forzar el color negro en las etiquetas de los ejes X e Y
+    fig_comp.update_xaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
+    fig_comp.update_yaxes(tickprefix="$", showgrid=True, gridcolor='#E0E0E0', tickfont=dict(color='black'), title_font=dict(color='black'))
+    
     st.plotly_chart(fig_comp, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -287,8 +289,21 @@ with col_graf2:
     
     if not df_chart_pie.empty:
         fig_pie = px.pie(df_chart_pie, names='Categoría', values='Validado', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig_pie.update_traces(textinfo='value+percent', texttemplate='%{label}<br>$%{value:,.2f}<br>(%{percent})')
-        fig_pie.update_layout(height=400, margin=dict(l=0, r=0, t=30, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        
+        # También forzamos el color negro en el texto de la gráfica de pastel
+        fig_pie.update_traces(
+            textinfo='value+percent', 
+            texttemplate='%{label}<br>$%{value:,.2f}<br>(%{percent})',
+            textfont=dict(color='black')
+        )
+        fig_pie.update_layout(
+            height=400, 
+            margin=dict(l=0, r=0, t=30, b=0), 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='black'),
+            legend=dict(font=dict(color='black'))
+        )
         st.plotly_chart(fig_pie, use_container_width=True)
     else:
         st.info("No hay gastos validados.")
