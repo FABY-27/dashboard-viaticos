@@ -111,7 +111,14 @@ if 'LOCALIDAD' in df.columns:
 else:
     selected_localidades = []
 
-# Aplicar filtros
+# --- NUEVO: Filtro Servicio ---
+if 'SERVICIO' in df.columns:
+    servicios = sorted(df['SERVICIO'].dropna().unique().tolist())
+    selected_servicios = st.sidebar.multiselect("Seleccionar Servicio:", options=servicios, default=[])
+else:
+    selected_servicios = []
+
+# Aplicar filtros cruzados
 df_filtered = df.copy()
 
 if len(date_range) == 2:
@@ -124,6 +131,10 @@ if selected_tecnicos:
 
 if selected_localidades:
     df_filtered = df_filtered[df_filtered['LOCALIDAD'].isin(selected_localidades)]
+
+# --- NUEVO: Aplicar filtro de Servicio ---
+if selected_servicios:
+    df_filtered = df_filtered[df_filtered['SERVICIO'].isin(selected_servicios)]
 
 # ----------------------------------------------------
 # 3. TARJETAS DE INDICADORES (KPIs)
