@@ -71,7 +71,7 @@ st.markdown("""
 # ----------------------------------------------------
 st.markdown("<div class='ubiknos-header'>UBIKNOS</div>", unsafe_allow_html=True)
 
-st.title("📊 Viáticos")
+st.title("📊 Dashboard Control de Viáticos")
 st.markdown("Plataforma automatizada para el control, validación y análisis de viáticos.")
 st.markdown("---")
 
@@ -96,12 +96,16 @@ def load_data():
 
     cols = list(df.columns)
     
+    # KPIs Mapeados estrictamente por letra de columna (K=10, X=23, Y=24)
     cols[10] = 'MONTO DEPOSITADO'
+    cols[23] = 'DIFERENCIA REAL' # NUEVO: Columna X que dice originalmente 'DIFERENCIA'
     cols[24] = 'SUMA VIATICOS VALIDADOS'
 
+    # Mapeo de categorías: lo depositado (L a T)
     cols[11], cols[12], cols[13], cols[14], cols[15], cols[16], cols[17], cols[18], cols[19] = \
     'DEP_Gasolina', 'DEP_Casetas', 'DEP_Autobus', 'DEP_Hospedaje', 'DEP_Lavanderia', 'DEP_Comidas', 'DEP_Renta_Auto', 'DEP_Vuelos', 'DEP_Extra'
 
+    # Mapeo de categorías: lo validado (AA a AQ)
     cols[26], cols[28], cols[30], cols[32], cols[34], cols[36], cols[38], cols[40], cols[42] = \
     'VAL_Gasolina', 'VAL_Casetas', 'VAL_Autobus', 'VAL_Hospedaje', 'VAL_Lavanderia', 'VAL_Comidas', 'VAL_Renta_Auto', 'VAL_Vuelos', 'VAL_Extra'
 
@@ -132,13 +136,15 @@ def load_data():
             except: return 0.0
         return 0.0
 
-    numeric_cols = ['MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS',
+    # Lista de todas las columnas que deben ser numéricas/dinero (incluyendo DIFERENCIA REAL)
+    numeric_cols = ['MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS', 'DIFERENCIA REAL',
                    'DEP_Gasolina', 'DEP_Casetas', 'DEP_Autobus', 'DEP_Hospedaje', 'DEP_Lavanderia', 'DEP_Comidas', 'DEP_Renta_Auto', 'DEP_Vuelos', 'DEP_Extra',
                    'VAL_Gasolina', 'VAL_Casetas', 'VAL_Autobus', 'VAL_Hospedaje', 'VAL_Lavanderia', 'VAL_Comidas', 'VAL_Renta_Auto', 'VAL_Vuelos', 'VAL_Extra']
                    
     for col in numeric_cols:
         df[col] = df[col].apply(clean_currency)
         
+    # Calculo de la DIFERENCIA LOCAL (Col K - Col Y) para control interno
     df['DIFERENCIA'] = df['MONTO DEPOSITADO'] - df['SUMA VIATICOS VALIDADOS']
     
     if 'COMENTARIOS' in df.columns:
@@ -205,22 +211,27 @@ st.markdown("### Resumen Global")
 
 total_depositado = df_filtered['MONTO DEPOSITADO'].sum()
 total_gastado = df_filtered['SUMA VIATICOS VALIDADOS'].sum()
-diferencia_total = total_depositado - total_gastado
+total_diferencia_real = df_filtered['DIFERENCIA REAL'].sum() # Suma de la columna X
+diferencia_total = total_depositado - total_gastado # K - Y para validación
 
-# HTML para las tarjetas de KPI
+# Estructura HTML actualizada con 4 tarjetas distribuidas al 25% cada una
 kpi_html = f"""
-<div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px;">
-    <div class="custom-card" style="flex: 1; text-align: center;">
-        <h4 style="margin:0; color:#555;">Total Depositado</h4>
-        <h2 style="margin:5px 0 0 0; color:#4C72B0;">${total_depositado:,.2f}</h2>
+<div style="display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+    <div class="custom-card" style="flex: 1; min-width: 200px; text-align: center;">
+        <h4 style="margin:0; color:#555; font-size:15px;">Total Depositado</h4>
+        <h2 style="margin:5px 0 0 0; color:#4C72B0; font-size:24px;">${total_depositado:,.2f}</h2>
     </div>
-    <div class="custom-card" style="flex: 1; text-align: center;">
-        <h4 style="margin:0; color:#555;">Total Gastado</h4>
-        <h2 style="margin:5px 0 0 0; color:#55A868;">${total_gastado:,.2f}</h2>
+    <div class="custom-card" style="flex: 1; min-width: 200px; text-align: center;">
+        <h4 style="margin:0; color:#555; font-size:15px;">Total Gastado</h4>
+        <h2 style="margin:5px 0 0 0; color:#55A868; font-size:24px;">${total_gastado:,.2f}</h2>
     </div>
-    <div class="custom-card" style="flex: 1; text-align: center;">
-        <h4 style="margin:0; color:#555;">Diferencia Neta</h4>
-        <h2 style="margin:5px 0 0 0; color:{'#E74C3C' if diferencia_total < 0 else '#27AE60'};">${diferencia_total:,.2f}</h2>
+    <div class="custom-card" style="flex: 1; min-width: 200px; text-align: center;">
+        <h4 style="margin:0; color:#555; font-size:15px;">Diferencia Neta</h4>
+        <h2 style="margin:5px 0 0 0; color:{'#E74C3C' if diferencia_total < 0 else '#27AE60'}; font-size:24px;">${diferencia_total:,.2f}</h2>
+    </div>
+    <div class="custom-card" style="flex: 1; min-width: 200px; text-align: center; border: 1px solid #74B9FF;">
+        <h4 style="margin:0; color:#2C3E50; font-size:15px; font-weight: bold;">Diferencia Real (Col X)</h4>
+        <h2 style="margin:5px 0 0 0; color:{'#E74C3C' if total_diferencia_real < 0 else '#27AE60'}; font-size:24px;">${total_diferencia_real:,.2f}</h2>
     </div>
 </div>
 """
@@ -275,7 +286,6 @@ with col_graf1:
         legend=dict(font=dict(color='black'))
     )
     
-    # Forzar el color negro en las etiquetas de los ejes X e Y
     fig_comp.update_xaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
     fig_comp.update_yaxes(tickprefix="$", showgrid=True, gridcolor='#E0E0E0', tickfont=dict(color='black'), title_font=dict(color='black'))
     
@@ -290,7 +300,6 @@ with col_graf2:
     if not df_chart_pie.empty:
         fig_pie = px.pie(df_chart_pie, names='Categoría', values='Validado', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
         
-        # También forzamos el color negro en el texto de la gráfica de pastel
         fig_pie.update_traces(
             textinfo='value+percent', 
             texttemplate='%{label}<br>$%{value:,.2f}<br>(%{percent})',
@@ -315,7 +324,7 @@ with col_graf2:
 st.markdown("### Tabla Detallada de Viáticos")
 st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
 
-cols_to_show = ['TECNICO', 'LIDER DE CUENTA', 'SERVICIO', 'LOCALIDAD', 'MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS', 'DIFERENCIA']
+cols_to_show = ['TECNICO', 'LIDER DE CUENTA', 'SERVICIO', 'LOCALIDAD', 'MONTO DEPOSITADO', 'SUMA VIATICOS VALIDADOS', 'DIFERENCIA', 'DIFERENCIA REAL']
 cols_to_show = [c for c in cols_to_show if c in df_filtered.columns]
 df_table = df_filtered[cols_to_show].copy()
 
@@ -325,7 +334,12 @@ def color_semaforo(val):
     elif val < 0: return 'background-color: #f8d7da; color: #721c24;'
     return ''
 
-styled_df = df_table.style.map(color_semaforo, subset=['DIFERENCIA']).format({'MONTO DEPOSITADO': '${:,.2f}', 'SUMA VIATICOS VALIDADOS': '${:,.2f}', 'DIFERENCIA': '${:,.2f}'})
+styled_df = df_table.style.map(color_semaforo, subset=['DIFERENCIA', 'DIFERENCIA REAL']).format({
+    'MONTO DEPOSITADO': '${:,.2f}', 
+    'SUMA VIATICOS VALIDADOS': '${:,.2f}', 
+    'DIFERENCIA': '${:,.2f}',
+    'DIFERENCIA REAL': '${:,.2f}'
+})
 st.dataframe(styled_df, use_container_width=True, hide_index=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
