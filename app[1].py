@@ -245,10 +245,37 @@ with col_graf1:
     st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
     st.markdown("**Comparativo: Depositado vs Gastado**")
     fig_comp = go.Figure()
-    fig_comp.add_trace(go.Bar(x=df_chart['Categoría'], y=df_chart['Depositado'], name='Depositado', marker_color='#4C72B0', texttemplate='$%{y:,.2f}', textposition='outside'))
-    fig_comp.add_trace(go.Bar(x=df_chart['Categoría'], y=df_chart['Validado'], name='Gastado Real', marker_color='#55A868', texttemplate='$%{y:,.2f}', textposition='outside'))
-    # Transparente para que tome el color de la tarjeta
-    fig_comp.update_layout(barmode='group', height=400, margin=dict(l=0, r=0, t=30, b=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    
+    # Se añade textfont para que las letras del detalle (números sobre la barra) sean estrictamente negras
+    fig_comp.add_trace(go.Bar(
+        x=df_chart['Categoría'], 
+        y=df_chart['Depositado'], 
+        name='Depositado', 
+        marker_color='#4C72B0', 
+        texttemplate='$%{y:,.2f}', 
+        textposition='outside',
+        textfont=dict(color='black')
+    ))
+    fig_comp.add_trace(go.Bar(
+        x=df_chart['Categoría'], 
+        y=df_chart['Validado'], 
+        name='Gastado Real', 
+        marker_color='#55A868', 
+        texttemplate='$%{y:,.2f}', 
+        textposition='outside',
+        textfont=dict(color='black')
+    ))
+    
+    # Se añade 'font=dict(color="black")' para asegurar la leyenda y etiquetas de ejes en negro
+    fig_comp.update_layout(
+        barmode='group', 
+        height=400, 
+        margin=dict(l=0, r=0, t=30, b=0), 
+        paper_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='black'),
+        legend=dict(font=dict(color='black'))
+    )
     fig_comp.update_yaxes(tickprefix="$", showgrid=True, gridcolor='#E0E0E0')
     st.plotly_chart(fig_comp, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
